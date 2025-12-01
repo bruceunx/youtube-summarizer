@@ -12,10 +12,10 @@ YT := ./src-tauri/binaries/ytdown-aarch64-apple-darwin
 WHISPER := ./src-tauri/binaries/whisper-aarch64-apple-darwin
 
 dev:
-	@pnpm tauri dev
+	@bun tauri dev
 
 build:
-	@pnpm tauri build
+	@bun tauri build
 
 
 all: download split
