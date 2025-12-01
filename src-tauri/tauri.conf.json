@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "video-maestro",
+  "productName": "youtube-summarizer",
   "version": "0.2.5",
   "identifier": "pylogic.net",
   "build": {
