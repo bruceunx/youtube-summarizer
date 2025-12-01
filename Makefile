@@ -1,5 +1,6 @@
 .PHONY: all download whisper test-rs
 
+.DEFAULT_GOAL := dev
 
 # must make the statment before .env, or the eq always evaluate
 ifeq ($(url),)
