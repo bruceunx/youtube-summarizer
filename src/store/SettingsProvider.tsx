@@ -11,6 +11,7 @@ const defaultSettings: SettingsType = {
   whisperUrl: null,
   whisperModelName: null,
   proxy: null,
+  tubeApiUrl: null,
 };
 
 interface SettingsContextType {

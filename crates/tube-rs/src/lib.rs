@@ -9,6 +9,7 @@ use std::{error::Error, fs::File, io::Write, path::Path, time::Duration};
 
 pub struct YoutubeAudio {
     client: Client,
+    tube_api_url: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
@@ -132,6 +133,18 @@ struct StreamingData {
     adaptive_formats: Option<Vec<Format>>,
 }
 
+#[derive(Deserialize, Debug)]
+struct AudioStream {
+    url: String,
+    filesize: u64,
+    mime_type: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct AudioResponsBody {
+    audio_stream: AudioStream,
+}
+
 // export the struct
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -189,6 +202,26 @@ fn preprocess_xml(xml_content: &str) -> String {
     without_declaration
 }
 
+async fn get_auth_audio_link(video_id: &str, api_url: &str) -> Option<AudioStream> {
+    #[derive(Serialize)]
+    struct AuidoRequestBody {
+        url: String,
+    }
+
+    let client = Client::new();
+    let body = AuidoRequestBody {
+        url: format!("https://www.youtube.com/watch?v={video_id}"),
+    };
+
+    match client.post(api_url).json(&body).send().await {
+        Ok(res) => match res.json::<AudioResponsBody>().await {
+            Ok(data) => Some(data.audio_stream),
+            Err(_) => None,
+        },
+        Err(_) => None,
+    }
+}
+
 fn parse_xml(xml: &str) -> Vec<SubtitleEntry> {
     // Parse the XML content
     #[derive(Debug, Deserialize)]
@@ -230,7 +263,7 @@ fn parse_xml(xml: &str) -> Vec<SubtitleEntry> {
 }
 
 impl YoutubeAudio {
-    pub fn new(proxy: Option<&str>) -> Self {
+    pub fn new(proxy: Option<&str>, tube_api_url: Option<String>) -> Self {
         let client_builder = Client::builder();
         let client = match proxy {
             Some(proxy_str) => match Proxy::https(proxy_str) {
@@ -239,7 +272,10 @@ impl YoutubeAudio {
             },
             _ => client_builder.build().unwrap(),
         };
-        Self { client }
+        Self {
+            client,
+            tube_api_url,
+        }
     }
 
     async fn get_auth_info(&self, video_id: &str) -> Result<AuthData, String> {
@@ -359,7 +395,7 @@ impl YoutubeAudio {
             all_formats.extend(adaptive_formats);
         }
 
-        let (mime_type, last_modified, audio_url, audio_filesize) = match all_formats
+        let (mut mime_type, last_modified, mut audio_url, mut audio_filesize) = match all_formats
             .into_iter()
             .filter(|format| format.mime_type.starts_with("audio"))
             .min_by_key(|format| format.bitrate)
@@ -393,7 +429,14 @@ impl YoutubeAudio {
             _ => (None, None),
         };
 
-        println!("{caption_url:?}, {caption_lang:?}");
+        if caption_lang.is_none() && self.tube_api_url.is_some() {
+            let api_url = self.tube_api_url.clone().unwrap();
+            if let Some(audio_data) = get_auth_audio_link(&video_id, &api_url).await {
+                audio_url = audio_data.url;
+                audio_filesize = audio_data.filesize;
+                mime_type = audio_data.mime_type;
+            }
+        }
 
         let thumbnail_url = format!("https://i.ytimg.com/vi/{}/sddefault.jpg", video_id);
 
@@ -493,10 +536,19 @@ mod tests {
     use std::{env, str::FromStr};
 
     #[tokio::test]
+    async fn check_get_audio_link() {
+        let tube_api_url = env::var("TUBE_API_URL").unwrap();
+        let result = get_auth_audio_link("jcrE1qrm_e8", &tube_api_url).await;
+        assert!(result.is_some());
+        println!("{result:?}");
+    }
+
+    #[tokio::test]
     async fn check_caption_lang_works() {
         dotenv().ok();
         let proxy = env::var("PROXY").ok();
-        let youtube_client = YoutubeAudio::new(proxy.as_deref());
+        let tube_api_url = env::var("TUBE_API_URL").ok();
+        let youtube_client = YoutubeAudio::new(proxy.as_deref(), tube_api_url);
         let url = "https://www.youtube.com/watch?v=2p_Hlm6aCok&ab_channel=TheoriesofEverythingwithCurtJaimungal";
         let video_data = youtube_client.get_video_info(url).await;
         assert!(video_data.is_some());
@@ -508,7 +560,8 @@ mod tests {
     async fn check_response_body_works() {
         dotenv().ok();
         let proxy = env::var("PROXY").ok();
-        let youtube_client = YoutubeAudio::new(proxy.as_deref());
+        let tube_api_url = env::var("TUBE_API_URL").ok();
+        let youtube_client = YoutubeAudio::new(proxy.as_deref(), tube_api_url);
         let url = "https://www.youtube.com/watch?v=s78hvV3QLUE&ab_channel=LexFridman";
         let video_data = youtube_client.get_video_info(url).await;
         assert!(video_data.is_some());
@@ -521,7 +574,8 @@ mod tests {
     async fn check_download_audio_works() {
         dotenv().ok();
         let proxy = env::var("PROXY").ok();
-        let youtube_client = YoutubeAudio::new(proxy.as_deref());
+        let tube_api_url = env::var("TUBE_API_URL").ok();
+        let youtube_client = YoutubeAudio::new(proxy.as_deref(), tube_api_url);
         let url = "https://www.youtube.com/watch?v=s78hvV3QLUE&t=4s"; //"https://www.youtube.com/watch?v=Q0cvzaPJJas&ab_channel=TJDeVries";
         let video_data = youtube_client.get_video_info(url).await;
         assert!(video_data.is_some());

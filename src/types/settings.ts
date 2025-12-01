@@ -6,4 +6,5 @@ export interface SettingsType {
   whisperUrl: string | null;
   whisperModelName: string | null;
   proxy: string | null;
+  tubeApiUrl: string | null;
 }

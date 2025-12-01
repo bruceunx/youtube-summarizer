@@ -13,6 +13,7 @@ pub struct AppSettings {
     pub whisper_url: Option<String>,
     pub whisper_model_name: Option<String>,
     pub proxy: Option<String>,
+    pub tube_api_url: Option<String>,
 }
 
 pub fn get_config_path(app: &tauri::AppHandle) -> PathBuf {
@@ -34,6 +35,17 @@ pub fn get_proxy(app: &tauri::AppHandle) -> Option<String> {
         let contents = fs::read_to_string(path).ok()?;
         let setting: AppSettings = serde_json::from_str(&contents).ok()?;
         setting.proxy
+    }
+}
+
+pub fn get_tube_api_url(app: &tauri::AppHandle) -> Option<String> {
+    let path = get_config_path(app);
+    if !path.exists() {
+        None
+    } else {
+        let contents = fs::read_to_string(path).ok()?;
+        let setting: AppSettings = serde_json::from_str(&contents).ok()?;
+        setting.tube_api_url
     }
 }
 

@@ -11,7 +11,10 @@ use tube_rs::YoutubeAudio;
 #[tauri::command(rename_all = "snake_case")]
 async fn run_yt(app: tauri::AppHandle, url: &str, input_id: i64) -> Result<(), String> {
     let mut _id = input_id;
-    let youtube_audio = YoutubeAudio::new(setting::get_proxy(&app).as_deref());
+    let youtube_audio = YoutubeAudio::new(
+        setting::get_proxy(&app).as_deref(),
+        setting::get_tube_api_url(&app),
+    );
     if _id == -1 {
         let audio_data = match youtube_audio.get_video_info(url).await {
             Some(data) => data,

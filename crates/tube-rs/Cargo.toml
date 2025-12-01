@@ -10,7 +10,7 @@ serde_json.workspace = true
 reqwest.workspace = true
 tokio.workspace = true
 serde-xml-rs = "0.6"
-
-
-[dev-dependencies]
 dotenv.workspace = true
+
+
+# [dev-dependencies]
