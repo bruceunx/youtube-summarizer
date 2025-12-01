@@ -20,8 +20,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-shell = "2"
+tauri = { version = "2.9", features = [] }
+tauri-plugin-shell = "2.3"
 rusqlite = { version = "0.32", features = ["bundled"] }
 tube-rs = { path = "../crates/tube-rs/" }
 ffmpeg-audio = { path = "../crates/ffmpeg-audio/" }
