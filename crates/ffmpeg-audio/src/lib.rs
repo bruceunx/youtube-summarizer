@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn split_wav_works() {
         let wav_splitter = WavSplitter::new(300);
-        let input_file = PathBuf::from_str("./output.wav").unwrap();
+        let input_file = PathBuf::from_str("./sample.wav").unwrap();
         let output_dir = PathBuf::from_str("output_dir").unwrap();
         let result = wav_splitter.split_wav(&input_file, &output_dir);
         assert!(result.is_ok());
@@ -218,6 +218,6 @@ mod tests {
             Err(e) => eprintln!("cannot get content {}", e),
         };
 
-        assert_eq!(1, 2);
+        // assert_eq!(1, 2);
     }
 }
